@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+psycopg2
+pymupdf
+langchain
+faiss-cpu
+sentence-transformers
+requests
+python-dotenv
