@@ -51,7 +51,7 @@ def inicializar_banco_vetorial():
         db = FAISS.from_texts(textos, embedding_model)
         print("✅ Banco vetorial criado com sucesso!")
     else:
-	db = None
+        db = None
         print("⚠️ Nenhum texto carregado. O banco vetorial não foi inicializado.")
 
 def buscar_resposta_rag(pergunta):
