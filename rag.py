@@ -1,4 +1,4 @@
-import fitz  # PyMuPDF para PDF
+import fitz  # PyMuPDF para PDFs
 import pandas as pd
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -7,7 +7,7 @@ import os
 embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 def extrair_texto_pdf(pdf_path):
-    """Extrai texto de um PDF usando PyMuPDF."""
+    """Extrai texto de um PDF."""
     texto = ""
     doc = fitz.open(pdf_path)
     for pagina in doc:
@@ -15,7 +15,7 @@ def extrair_texto_pdf(pdf_path):
     return texto
 
 def extrair_texto_planilha(planilha_path):
-    """Lê planilhas (CSV ou Excel) e extrai os textos."""
+    """Extrai textos de planilhas (CSV, XLSX)."""
     textos = []
     try:
         if planilha_path.endswith(".csv"):
@@ -25,7 +25,6 @@ def extrair_texto_planilha(planilha_path):
         else:
             return []
 
-        # Concatena todas as colunas em uma string para cada linha
         for _, row in df.iterrows():
             linha_texto = " | ".join(str(valor) for valor in row if pd.notna(valor))
             textos.append(linha_texto)
@@ -36,12 +35,12 @@ def extrair_texto_planilha(planilha_path):
     return textos
 
 def processar_documentos():
-    """Lê PDFs e Planilhas do diretório e gera os embeddings dinamicamente."""
+    """Lê documentos na pasta `documentos_pdfs/` e gera os embeddings."""
     documentos = []
 
     for arquivo in os.listdir("documentos_pdfs"):
         caminho = os.path.join("documentos_pdfs", arquivo)
-        
+
         if arquivo.endswith(".pdf"):
             texto = extrair_texto_pdf(caminho)
             documentos.append(texto)
@@ -53,14 +52,14 @@ def processar_documentos():
     return documentos
 
 def buscar_resposta_rag(pergunta):
-    """Recarrega os documentos e busca informações antes de responder."""
-    textos = processar_documentos()  # 🔥 Recarrega os documentos toda vez que for chamado
+    """Busca informações nos documentos antes de responder."""
+    textos = processar_documentos()
 
     if not textos:
-        return "Nenhuma informação relevante encontrada nos documentos."
+        return "Nenhuma informação relevante encontrada."
 
-    db = FAISS.from_texts(textos, embedding_model)  # 🔥 Cria um novo FAISS dinâmico
+    db = FAISS.from_texts(textos, embedding_model)
     resultados = db.similarity_search(pergunta, k=3)
-    
+
     contexto = "\n".join([r.page_content for r in resultados])
     return contexto
