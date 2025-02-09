@@ -18,17 +18,20 @@ def perguntar_deepseek(pergunta, contexto=""):
             {"role": "system", "content": "Você é um assistente para um professor universitário."},
             {"role": "user", "content": f"Pergunta: {pergunta}\nContexto: {contexto}"}
         ],
-        "max_tokens": 500,  # Define um limite para evitar respostas longas demais
-        "temperature": 0.7  # Ajuste de criatividade (0 = mais conservador, 1 = mais criativo)
+        "max_tokens": 500,
+        "temperature": 0.7
     }
 
     try:
         response = requests.post(url, headers=headers, json=data)
         response_data = response.json()
 
-        # Verifica se a resposta contém 'choices' e se há conteúdo
+        # 🔥 Adiciona logs para debug
+        print("🔵 Resposta da API do DeepSeek:", response_data)
+
+        # Verifica se a resposta contém 'choices'
         if "choices" not in response_data or not response_data["choices"]:
-            return "Erro: A API do DeepSeek não retornou uma resposta válida."
+            return f"Erro: Resposta inesperada da API do DeepSeek: {response_data}"
 
         return response_data["choices"][0]["message"]["content"]
 
