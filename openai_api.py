@@ -5,13 +5,13 @@ import os
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 def perguntar_chatgpt(pergunta, contexto=""):
-    """Faz uma requisição para a API do ChatGPT (OpenAI) usando GPT-4o mini e retorna a resposta."""
+    """Faz uma requisição para a API do ChatGPT (OpenAI) usando GPT-3.5 Turbo e retorna a resposta."""
     
     try:
         client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
         resposta = client.chat.completions.create(
-            model="gpt-4o-mini",  # Alterado para GPT-4o mini
+            model="gpt-3.5-turbo",  # 🔥 Mudamos para GPT-3.5 Turbo
             messages=[
                 {"role": "system", "content": "Você é um assistente para um professor universitário."},
                 {"role": "user", "content": f"Pergunta: {pergunta}\nContexto: {contexto}"}
@@ -28,4 +28,5 @@ def perguntar_chatgpt(pergunta, contexto=""):
 
     except Exception as e:
         return f"Erro ao acessar a API do ChatGPT: {e}"
+
 
