@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from db import conectar_db
 from rag import buscar_resposta_rag
 from deepseek import perguntar_deepseek
+from openai_api import perguntar_chatgpt
 import uvicorn
 import os
 
@@ -38,7 +39,7 @@ def perguntar(pergunta: str):
         if not contexto or contexto.strip() == "":
             contexto = "Nenhuma informação relevante encontrada nos documentos."
 
-        resposta = perguntar_deepseek(pergunta, contexto)
+        resposta = perguntar_chatgpt(pergunta, contexto)
         if not resposta or resposta.strip() == "":
             resposta = "A IA não conseguiu gerar uma resposta com base nos dados disponíveis."
 
@@ -46,6 +47,7 @@ def perguntar(pergunta: str):
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao processar pergunta: {e}")
+
 
 # Garantir que o Render detecte a porta corretamente
 if __name__ == "__main__":
