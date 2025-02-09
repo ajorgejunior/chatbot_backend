@@ -1,7 +1,8 @@
 import fitz
 import os
 from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
+
 
 # Inicializa o modelo de embeddings
 embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
@@ -50,6 +51,7 @@ def inicializar_banco_vetorial():
         db = FAISS.from_texts(textos, embedding_model)
         print("✅ Banco vetorial criado com sucesso!")
     else:
+	db = None
         print("⚠️ Nenhum texto carregado. O banco vetorial não foi inicializado.")
 
 def buscar_resposta_rag(pergunta):

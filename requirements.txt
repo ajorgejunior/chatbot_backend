@@ -3,6 +3,7 @@ uvicorn
 psycopg2
 pymupdf
 langchain-community
+langchain-huggingface
 faiss-cpu
 sentence-transformers
 requests
