@@ -4,7 +4,18 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 import os
 
 embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-db = FAISS.from_texts([], embedding_model)
+db = None  # Inicializa o banco vetorial
+
+def inicializar_banco_vetorial():
+    global db
+    textos = processar_pdfs()  # Extrai os textos dos PDFs
+    if textos:  # Só cria o FAISS se houver texto
+        db = FAISS.from_texts(textos, embedding_model)
+    else:
+        print("Nenhum texto encontrado nos PDFs. O banco vetorial não será criado.")
+
+inicializar_banco_vetorial()
+
 
 def extrair_texto_pdf(pdf_path):
     """Extrai texto de um PDF usando PyMuPDF."""
