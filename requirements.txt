@@ -9,3 +9,4 @@ sentence-transformers
 requests
 python-dotenv
 openai
+pandas
