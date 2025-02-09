@@ -2,7 +2,7 @@ fastapi
 uvicorn
 psycopg2
 pymupdf
-langchain
+langchain-community
 faiss-cpu
 sentence-transformers
 requests
