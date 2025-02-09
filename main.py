@@ -3,6 +3,7 @@ from db import conectar_db
 from rag import buscar_resposta_rag
 from deepseek import perguntar_deepseek
 import uvicorn
+import os
 
 app = FastAPI()
 
@@ -48,4 +49,5 @@ def perguntar(pergunta: str):
 
 # Garantir que o Render detecte a porta corretamente
 if __name__ == "__main__":
+    port = int(os.getenv("PORT", 10000))  # Usa a porta definida pelo Render
     uvicorn.run(app, host="0.0.0.0", port=10000)
