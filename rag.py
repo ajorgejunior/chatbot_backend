@@ -1,71 +1,66 @@
-import fitz
-import os
+import fitz  # PyMuPDF para PDF
+import pandas as pd
 from langchain_community.vectorstores import FAISS
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
+import os
 
-
-# Inicializa o modelo de embeddings
 embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-db = None  # O banco vetorial será criado apenas se houver textos extraídos
 
 def extrair_texto_pdf(pdf_path):
     """Extrai texto de um PDF usando PyMuPDF."""
     texto = ""
-    try:
-        doc = fitz.open(pdf_path)
-        for pagina in doc:
-            texto += pagina.get_text("text") + "\n"
-    except Exception as e:
-        print(f"Erro ao processar o PDF {pdf_path}: {e}")
+    doc = fitz.open(pdf_path)
+    for pagina in doc:
+        texto += pagina.get_text("text") + "\n"
     return texto
 
-def processar_pdfs():
-    """Lê PDFs do diretório e retorna os textos extraídos."""
+def extrair_texto_planilha(planilha_path):
+    """Lê planilhas (CSV ou Excel) e extrai os textos."""
+    textos = []
+    try:
+        if planilha_path.endswith(".csv"):
+            df = pd.read_csv(planilha_path)
+        elif planilha_path.endswith(".xlsx") or planilha_path.endswith(".xls"):
+            df = pd.read_excel(planilha_path)
+        else:
+            return []
+
+        # Concatena todas as colunas em uma string para cada linha
+        for _, row in df.iterrows():
+            linha_texto = " | ".join(str(valor) for valor in row if pd.notna(valor))
+            textos.append(linha_texto)
+
+    except Exception as e:
+        print(f"Erro ao processar planilha {planilha_path}: {e}")
+
+    return textos
+
+def processar_documentos():
+    """Lê PDFs e Planilhas do diretório e gera os embeddings dinamicamente."""
     documentos = []
-    diretorio = "documentos_pdfs"
 
-    # Criar o diretório se ele não existir
-    if not os.path.exists(diretorio):
-        print(f"⚠️ Diretório `{diretorio}` não encontrado! Criando...")
-        os.makedirs(diretorio)
-    
-    arquivos_pdf = [f for f in os.listdir(diretorio) if f.endswith(".pdf")]
-
-    if not arquivos_pdf:
-        print("⚠️ Nenhum PDF encontrado no diretório `documentos_pdfs`.")
-        return []  # Retorna lista vazia se não houver PDFs
-
-    for arquivo in arquivos_pdf:
-        caminho = os.path.join(diretorio, arquivo)
-        texto = extrair_texto_pdf(caminho)
-        if texto.strip():  # Evita adicionar arquivos vazios
+    for arquivo in os.listdir("documentos_pdfs"):
+        caminho = os.path.join("documentos_pdfs", arquivo)
+        
+        if arquivo.endswith(".pdf"):
+            texto = extrair_texto_pdf(caminho)
             documentos.append(texto)
+
+        elif arquivo.endswith(".csv") or arquivo.endswith(".xlsx") or arquivo.endswith(".xls"):
+            textos_planilha = extrair_texto_planilha(caminho)
+            documentos.extend(textos_planilha)
 
     return documentos
 
-def inicializar_banco_vetorial():
-    """Inicializa o banco vetorial FAISS apenas se houver textos processados."""
-    global db
-    textos = processar_pdfs()
-    if textos:
-        db = FAISS.from_texts(textos, embedding_model)
-        print("✅ Banco vetorial criado com sucesso!")
-    else:
-        db = None
-        print("⚠️ Nenhum texto carregado. O banco vetorial não foi inicializado.")
-
 def buscar_resposta_rag(pergunta):
-    """Busca informações nos documentos antes de responder."""
-    if db is None:
-        print("⚠️ Banco vetorial não inicializado. Retornando resposta vazia.")
-        return "Nenhum documento carregado para responder à pergunta."
+    """Recarrega os documentos e busca informações antes de responder."""
+    textos = processar_documentos()  # 🔥 Recarrega os documentos toda vez que for chamado
 
-    resultados = db.similarity_search(pergunta, k=3)
-    if not resultados:
+    if not textos:
         return "Nenhuma informação relevante encontrada nos documentos."
 
+    db = FAISS.from_texts(textos, embedding_model)  # 🔥 Cria um novo FAISS dinâmico
+    resultados = db.similarity_search(pergunta, k=3)
+    
     contexto = "\n".join([r.page_content for r in resultados])
     return contexto
-
-# Inicializar FAISS ao carregar o módulo
-inicializar_banco_vetorial()
