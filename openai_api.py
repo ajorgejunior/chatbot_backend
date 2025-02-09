@@ -5,10 +5,12 @@ import os
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 def perguntar_chatgpt(pergunta, contexto=""):
-    """Faz uma requisição ao GPT-3.5 Turbo da OpenAI."""
-    
+    """Faz uma requisição ao GPT-3.5 Turbo da OpenAI usando a API atualizada."""
+
     try:
-        resposta = openai.ChatCompletion.create(
+        client = openai.OpenAI(api_key=OPENAI_API_KEY)
+
+        resposta = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "Você é um assistente que responde com base em documentos fornecidos."},
@@ -18,7 +20,7 @@ def perguntar_chatgpt(pergunta, contexto=""):
             temperature=0.7
         )
 
-        return resposta["choices"][0]["message"]["content"].strip()
+        return resposta.choices[0].message.content.strip()
 
     except Exception as e:
         return f"Erro ao acessar OpenAI: {str(e)}"
