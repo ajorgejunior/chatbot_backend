@@ -1,31 +1,62 @@
 import os
-import telebot
-from openai_api import perguntar_chatgpt
+import requests
+import logging
+from fastapi import FastAPI, Request
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
 from rag import buscar_resposta_rag
+from openai_api import perguntar_chatgpt
 
-# 🔑 Pegue seu Token do Telegram do BotFather e defina como variável de ambiente
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+# Configuração do bot do Telegram
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+BASE_URL = f"https://api.telegram.org/bot{TOKEN}"
 
-bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
+# Inicializa FastAPI
+app = FastAPI()
 
-@bot.message_handler(commands=['start'])
-def enviar_boas_vindas(message):
-    bot.reply_to(message, "🤖 Olá! Eu sou seu Assistente. Pergunte-me algo!")
+@app.post("/webhook")
+async def webhook(request: Request):
+    """Recebe mensagens do Telegram e responde via API"""
+    data = await request.json()
+    
+    if "message" in data:
+        chat_id = data["message"]["chat"]["id"]
+        pergunta = data["message"]["text"]
 
-@bot.message_handler(func=lambda msg: True)
-def responder_pergunta(message):
-    pergunta = message.text.strip()
+        # Busca a resposta usando RAG + OpenAI
+        contexto = buscar_resposta_rag(pergunta)
+        resposta = perguntar_chatgpt(pergunta, contexto)
 
-    # 1️⃣ Primeiro, tenta buscar nos documentos (RAG)
-    contexto = buscar_resposta_rag(pergunta)
+        # Envia a resposta de volta para o Telegram
+        requests.post(f"{BASE_URL}/sendMessage", json={"chat_id": chat_id, "text": resposta})
 
-    if not contexto:
-        contexto = "Nenhuma informação relevante encontrada nos documentos."
+    return {"status": "ok"}
 
-    # 2️⃣ Se não encontrar, usa GPT-3.5 Turbo
-    resposta = perguntar_chatgpt(pergunta, contexto)
+async def start(update: Update, context):
+    """Comando /start para iniciar o bot"""
+    await update.message.reply_text("Olá! Eu sou seu assistente acadêmico. Pergunte algo!")
 
-    bot.reply_to(message, resposta)
+async def responder(update: Update, context):
+    """Recebe perguntas dos usuários e processa via RAG + GPT"""
+    pergunta = update.message.text
+    contexto = buscar_resposta_rag(pergunta)  # RAG busca informações nos documentos
+    resposta = perguntar_chatgpt(pergunta, contexto)  # OpenAI gera resposta
 
-# Inicia o bot
-bot.polling()
+    await update.message.reply_text(resposta)
+
+def iniciar_bot():
+    """Inicia o bot do Telegram e configura handlers"""
+    app_telegram = ApplicationBuilder().token(TOKEN).build()
+
+    # Comandos
+    app_telegram.add_handler(CommandHandler("start", start))
+    
+    # Responder a qualquer mensagem recebida
+    app_telegram.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, responder))
+
+    print("🤖 Bot do Telegram iniciado!")
+    app_telegram.run_polling()
+
+if __name__ == "__main__":
+    iniciar_bot()
+
