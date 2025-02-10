@@ -14,20 +14,24 @@ app = FastAPI()
 @app.post("/webhook")
 async def webhook(request: Request):
     """Recebe mensagens do Telegram e responde via API"""
-    data = await request.json()
-    
-    if "message" in data:
-        chat_id = data["message"]["chat"]["id"]
-        pergunta = data["message"]["text"]
+    try:
+        data = await request.json()
 
-        # Busca a resposta usando RAG + OpenAI
-        contexto = buscar_resposta_rag(pergunta)
-        resposta = perguntar_chatgpt(pergunta, contexto)
+        if "message" in data:
+            chat_id = data["message"]["chat"]["id"]
+            pergunta = data["message"]["text"]
 
-        # Envia a resposta de volta para o Telegram
-        requests.post(f"{BASE_URL}/sendMessage", json={"chat_id": chat_id, "text": resposta})
+            # Busca a resposta usando RAG + OpenAI
+            contexto = buscar_resposta_rag(pergunta)
+            resposta = perguntar_chatgpt(pergunta, contexto)
 
-    return {"status": "ok"}
+            # Envia a resposta de volta para o Telegram
+            requests.post(f"{BASE_URL}/sendMessage", json={"chat_id": chat_id, "text": resposta})
+
+        return {"status": "ok"}
+
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 @app.get("/")
 def home():
